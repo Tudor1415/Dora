@@ -6,11 +6,17 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=5
-#SBATCH --output=%x_%j.out
-#SBATCH --error=%x_%j.err
+#SBATCH --output=slurm_logs/%x_%j.out
+#SBATCH --error=slurm_logs/%x_%j.err
 
-set -euo pipefail
+# Keep nounset disabled: Jean Zay conda activation scripts reference unset vars.
+set -eo pipefail
 set -x
+
+# Ensure folder exists for any extra logs created during execution.
+# For Slurm's own open(2) at job start, create it before sbatch:
+#   mkdir -p slurm_logs
+mkdir -p slurm_logs
 
 module purge
 module load python/3.9.12
