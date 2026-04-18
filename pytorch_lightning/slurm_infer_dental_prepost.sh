@@ -36,6 +36,34 @@ DATA_ROOT="${DATA_ROOT:-$SCRATCH/seg_data}"
 PRECOMP_ROOT="${PRECOMP_ROOT:-$SCRATCH/seg_data_precomp_sdf}"
 OUT_ROOT="${OUT_ROOT:-$PROJECT_ROOT/infer_out}"
 
+# Dependency bootstrap:
+# - default behavior installs only missing OmegaConf (fastest fix for current failure)
+# - set INSTALL_REQUIREMENTS=1 to install full pytorch_lightning/requirements.txt
+INSTALL_REQUIREMENTS="${INSTALL_REQUIREMENTS:-0}"
+AUTO_INSTALL_OMEGACONF="${AUTO_INSTALL_OMEGACONF:-1}"
+
+if [[ "${INSTALL_REQUIREMENTS}" == "1" ]]; then
+  echo "[INFO] Installing full Python requirements..."
+  python -m pip install -r "$PROJECT_ROOT/pytorch_lightning/requirements.txt"
+else
+  if ! python - <<'PY'
+import importlib.util
+import sys
+sys.exit(0 if importlib.util.find_spec("omegaconf") is not None else 1)
+PY
+  then
+    if [[ "${AUTO_INSTALL_OMEGACONF}" == "1" ]]; then
+      echo "[WARN] Missing dependency: omegaconf. Installing omegaconf==2.3.0..."
+      python -m pip install "omegaconf==2.3.0"
+    else
+      echo "[ERROR] Missing dependency: omegaconf"
+      echo "[ERROR] Re-run with AUTO_INSTALL_OMEGACONF=1 or install manually:"
+      echo "        python -m pip install omegaconf==2.3.0"
+      exit 2
+    fi
+  fi
+fi
+
 DEVICE="${DEVICE:-cuda}"
 SCAN_SEED="${SCAN_SEED:-0}"
 LATENT_LENGTHS="${LATENT_LENGTHS:-256,512,1024,2048,4096}"
